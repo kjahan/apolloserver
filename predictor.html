@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Predictor!</title>
+  </head>
+
+<body>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+
+<div class="container">
+    <fieldset class="border p-2" id="step-1">
+        <form id="upload-file" method="post" enctype="multipart/form-data">
+            <legend class="w-auto">Step I</legend>
+            <p>You need to upload your CSV file to the server for the time series analysis.</p>
+            <p>The input to Predictor should be a CSV file with two columns: 'ds' and 'y'.  The 'ds' (datestamp) column in the format of "YYYY-MM-DD" for a date or "YYYY-MM-DD HH:MM:SS" for a timestamp. The 'y' column must be numeric, and represents the measurement you wish to forecast.</p>
+
+            <div class="input-group">
+                <div class="custom-file">
+                    <input id="choose-file" class="custom-file-input" name="file" type="file">
+                    <label class="custom-file-label" for="choose-file">Choose file</label>
+                </div>
+                <div class="input-group-append">
+                    <input class="btn btn-outline-secondary" type="submit" value="Upload" disabled />
+                </div>
+            </div>
+
+        </form>
+    </fieldset>
+
+    <fieldset class="border p-2" id="step-2" style="display: none;">
+        <legend class="w-auto">Step II</legend>
+            <p>Then you can train a model with your historical data. Fitting should take 1-5 seconds.</p>
+            <p>Predictions are then made for the requested number of days in the future (e.g. 365). By default the predictions will also include the dates from the history, so you will see the model fit as well.</p>
+        <button id="predict-btn" class="btn btn-primary" type="button">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
+            Fit Model
+        </button>
+    </fieldset>
+
+    <fieldset class="border p-2" id="step-3" style="display: none;">
+        <legend class="w-auto">Step III</legend>
+        <p>The `predict` method will assign each row in `future` a predicted value which it names `yhat`.  If you pass in historical dates, it will provide an in-sample fit. The `forecast` object here is a new dataframe that includes a column `yhat` with the forecast, as well as columns for components and uncertainty intervals.</p>
+        <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
+        <button id="start-again" class="btn btn-primary" type="button">Start Again</button>
+    </fieldset>
+
+</div>
+
+<script>
+
+$(function() {
+    function uploadFile(e) {
+        e.preventDefault();
+
+        var form_data = new FormData($('#upload-file')[0]);
+        $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:5001/api/v1/upload',
+            data: form_data,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function(data) {
+                console.log('Success!');
+                $('#step-1').hide();
+                $('#step-2').show();
+            },
+        });
+    }
+
+    $('.custom-file-input').on('change', function() {
+        let fileName = $(this).val().split('\\').pop();
+        $(this).siblings('.custom-file-label').addClass("selected").html(fileName);
+    });
+
+    //$('#upload-file-btn').click(uploadFile);
+    //$('#choose-file').on('change', uploadFile);
+
+    $('form#upload-file').submit(uploadFile);
+    //$('#choose-file').on('change', function() { console.log('submitting'); $(this).parents('form:first').submit(); });
+    $('#choose-file').on('change', function() { $(this).parents('form:first').find('input[type="submit"]').removeAttr('disabled'); });
+ 
+    $('#start-again').click(function() {
+        $('#step-2').hide();
+        $('#step-3').hide();
+        $('#step-1').show();
+    });
+
+    $('#predict-btn').click(function() {
+        var self = this;
+        $(this).find('.spinner-border').show();
+        var fn = $('input[type=file]').val().split('\\').pop();
+        $.ajax({
+            type: 'GET',
+            url: 'http://127.0.0.1:5001/api/v1/predict',
+            data: { 
+                filename: fn
+            },
+            success: function(response) {
+                // play forecast image
+                $(self).find('.spinner-border').hide();
+                $("#forecast-img").attr("src", response.url);
+                $('#step-2').hide();
+                $('#step-3').show();
+            },
+            error: function(xhr) {
+                // handle error
+                alert('Error');
+                $(self).find('.spinner-border').hide();
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html> 
