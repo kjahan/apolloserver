@@ -1,2 +1,2 @@
-# prophet-app
-Prophet application
+# apollo-server
+Apollo server application
