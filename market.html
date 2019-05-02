@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Predictor!</title>
+  </head>
+
+<body>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+
+<div class="container">
+    <fieldset class="border p-2" id="step-1">
+        <form id="submit-symbol" method="post" enctype="multipart/form-data">
+            <legend class="w-auto">Step I</legend>
+            <p>Enter the stock market symbol:</p>
+            <div class="form-group">
+                <input type="text" class="form-control" id="symbolInput" placeholder="CRM">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
+                Forecast
+            </button>
+        </form>
+    </fieldset>
+
+    <fieldset class="border p-2" id="step-2" style="display: none;">
+        <legend class="w-auto">Step II</legend>
+        <p>The `predict` method will assign each row in `future` a predicted value which it names `yhat`.  If you pass in historical dates, it will provide an in-sample fit. The `forecast` object here is a new dataframe that includes a column `yhat` with the forecast, as well as columns for components and uncertainty intervals.</p>
+        <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
+        <button id="start-again" class="btn btn-primary" type="button">Start Again</button>
+    </fieldset>
+
+</div>
+
+<script>
+
+$(function() {
+    function submitSymbol(e) {
+        e.preventDefault();
+        var self = this;
+        $(this).find('.spinner-border').show();
+        // Create a FormData object
+        var form_data = new FormData($('#submit-symbol'));
+        // Get symbol 
+        var symb = $('#symbolInput').val();
+        form_data.append('symbol', symb);
+
+        $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:5001/api/v1/forecast',
+            data: form_data,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function(response) {
+                console.log('Success!');
+                $('#step-1').hide();
+                // stop spinner
+                $(self).find('.spinner-border').hide();
+                // play forecast image
+                $("#forecast-img").attr("src", response.url);
+                $('#step-2').show();
+            },
+        });
+    }
+
+    $('form#submit-symbol').submit(submitSymbol);
+ 
+    $('#start-again').click(function() {
+        $('#step-2').hide();
+        $('#step-1').show();
+    });
+});
+</script>
+
+</body>
+</html> 
