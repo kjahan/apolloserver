@@ -24,10 +24,15 @@
     <fieldset class="border p-2" id="step-1">
         <form id="submit-symbol" method="post" enctype="multipart/form-data">
             <legend class="w-auto">Step I</legend>
-            <p>Enter the stock market symbol:</p>
+            <p>Enter the market symbol and days parameter to run the Apollo forecaster:</p>
             <div class="form-group">
-                <input type="text" class="form-control" id="symbolInput" placeholder="CRM">
+                <label for="formGroupSymbolInput">Stock market symbol</label>
+                <input type="text" class="form-control" id="formGroupSymbolInput" placeholder="CRM">
             </div>
+            <div class="form-group">
+                <label for="formGroupDaysInput">Forecast days in future</label>
+                <input type="text" class="form-control" id="formGroupDaysInput" placeholder="30">
+            </div>            
             <button type="submit" class="btn btn-primary">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
                 Forecast
@@ -37,7 +42,7 @@
 
     <fieldset class="border p-2" id="step-2" style="display: none;">
         <legend class="w-auto">Step II</legend>
-        <p>The `predict` method will assign each row in `future` a predicted value which it names `yhat`.  If you pass in historical dates, it will provide an in-sample fit. The `forecast` object here is a new dataframe that includes a column `yhat` with the forecast, as well as columns for components and uncertainty intervals.</p>
+        <div class="inner"></div>
         <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
         <button id="start-again" class="btn btn-primary" type="button">Start Again</button>
     </fieldset>
@@ -53,9 +58,11 @@ $(function() {
         $(this).find('.spinner-border').show();
         // Create a FormData object
         var form_data = new FormData($('#submit-symbol'));
-        // Get symbol 
-        var symb = $('#symbolInput').val();
+        // Get symbol & days hyper-param
+        var symb = $('#formGroupSymbolInput').val();
+        var days_no = $('#formGroupDaysInput').val();
         form_data.append('symbol', symb);
+        form_data.append('days', days_no);
 
         $.ajax({
             type: 'POST',
@@ -71,6 +78,7 @@ $(function() {
                 $(self).find('.spinner-border').hide();
                 // play forecast image
                 $("#forecast-img").attr("src", response.url);
+                $(".inner").append("<p>The forecast for " + symb + " over the next " + days_no + " days:</p>");
                 $('#step-2').show();
             },
         });
