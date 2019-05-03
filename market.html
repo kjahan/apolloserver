@@ -42,7 +42,7 @@
 
     <fieldset class="border p-2" id="step-2" style="display: none;">
         <legend class="w-auto">Step II</legend>
-        <div class="inner"></div>
+        <div class="inner"><p id="forecast-img-nlg"></p></div>
         <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
         <button id="start-again" class="btn btn-primary" type="button">Start Again</button>
     </fieldset>
@@ -78,7 +78,7 @@ $(function() {
                 $(self).find('.spinner-border').hide();
                 // play forecast image
                 $("#forecast-img").attr("src", response.url);
-                $(".inner").append("<p>The forecast for " + symb + " over the next " + days_no + " days:</p>");
+                $("#forecast-img-nlg").text("The forecast for " + symb.toUpperCase() + " over the next " + days_no + " days:");
                 $('#step-2').show();
             },
         });
