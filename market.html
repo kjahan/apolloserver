@@ -24,7 +24,7 @@
     <fieldset class="border p-2" id="step-1">
         <form id="submit-symbol" method="post" enctype="multipart/form-data">
             <legend class="w-auto">Step I</legend>
-            <p>Enter the market symbol and days parameter to run the Apollo forecaster:</p>
+            <p>Enter the market symbol and days that you would like to run the forecaster for:</p>
             <div class="form-group">
                 <label for="formGroupSymbolInput">Stock market symbol</label>
                 <input type="text" class="form-control" id="formGroupSymbolInput" placeholder="CRM">
@@ -51,37 +51,73 @@
 
 <script>
 
+function getAscendingRatio(trendArray) {
+    // calculate the ascendingness of the array values
+    var asc = 0;
+    var arrayLength = trendArray.length;
+
+    for (var i = 0; i < arrayLength; i++) {
+        if (trendArray[i] <= trendArray[i+1]) {
+            asc += 1;
+        }
+    }
+  return asc/arrayLength;
+}
+
 $(function() {
     function submitSymbol(e) {
         e.preventDefault();
         var self = this;
-        $(this).find('.spinner-border').show();
         // Create a FormData object
         var form_data = new FormData($('#submit-symbol'));
         // Get symbol & days hyper-param
         var symb = $('#formGroupSymbolInput').val();
         var days_no = $('#formGroupDaysInput').val();
-        form_data.append('symbol', symb);
-        form_data.append('days', days_no);
+        if (days_no == '') {
+            days_no = 30    // Default value
+        }
+        if(symb == ''){
+            alert('You should set the stock market symbol.');
+        } else {
+            $(this).find('.spinner-border').show();
+            form_data.append('symbol', symb);
+            form_data.append('days', days_no);
 
-        $.ajax({
-            type: 'POST',
-            url: 'http://127.0.0.1:5001/api/v1/forecast',
-            data: form_data,
-            contentType: false,
-            cache: false,
-            processData: false,
-            success: function(response) {
-                console.log('Success!');
-                $('#step-1').hide();
-                // stop spinner
-                $(self).find('.spinner-border').hide();
-                // play forecast image
-                $("#forecast-img").attr("src", response.url);
-                $("#forecast-img-nlg").text("The forecast for " + symb.toUpperCase() + " over the next " + days_no + " days:");
-                $('#step-2').show();
-            },
-        });
+            $.ajax({
+                type: 'POST',
+                url: 'http://127.0.0.1:5001/api/v1/forecast',
+                data: form_data,
+                contentType: false,
+                cache: false,
+                processData: false,
+                success: function(response) {
+                    console.log('Success!');
+                    $('#step-1').hide();
+                    // stop spinner
+                    $(self).find('.spinner-border').hide();
+                    // display forecast image
+                    $("#forecast-img").attr("src", response.url);
+                    trendArray = response.trend;
+                    // console.log(trendArray);
+                    var asc = getAscendingRatio(trendArray);
+                    var desc = 1.0 - asc;
+                    //console.log(asc);
+                    if (asc > 0.9) {
+                        $("#forecast-img-nlg").text("The following graph shows the forecast for " + symb.toUpperCase() + " over the next " + days_no + " days.  Our analysis suggests that you should buy this stock or hold if you have it.");
+                    } else if (desc > 0.9) {
+                        $("#forecast-img-nlg").text("The following graph shows the forecast for " + symb.toUpperCase() + " over the next " + days_no + " days.  Our analysis suggests that you should sell this stock if you own it or short it.");
+                    } else {
+                        $("#forecast-img-nlg").text("The following graph shows the forecast for " + symb.toUpperCase() + " over the next " + days_no + " days.  We don't recommend any actions at this time.");
+                    }
+                    $('#step-2').show();
+                },
+                error: function(xhr) {
+                    // handle error
+                    alert('Error occured while processing the request.  Try again later.');
+                    $(self).find('.spinner-border').hide();
+            }
+            });
+        }
     }
 
     $('form#submit-symbol').submit(submitSymbol);
