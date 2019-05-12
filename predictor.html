@@ -24,9 +24,8 @@
     <fieldset class="border p-2" id="step-1">
         <form id="upload-file" method="post" enctype="multipart/form-data">
             <legend class="w-auto">Step I</legend>
-            <p>You need to upload your CSV file to the server for the time series analysis.</p>
-            <p>The input to Predictor should be a CSV file with two columns: 'ds' and 'y'.  The 'ds' (datestamp) column in the format of "YYYY-MM-DD" for a date or "YYYY-MM-DD HH:MM:SS" for a timestamp. The 'y' column must be numeric, and represents the measurement you wish to forecast.</p>
-
+            <p>Upload your data to start the forecasting analysis.</p>
+            <p>Your file should have a CSV format with two columns: 'ds' (date) and 'y' (metric).  The 'ds' column should have one of "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS" formats. The 'y' column is the metric/measure that you're interested in running the forecast for.</p>
             <div class="input-group">
                 <div class="custom-file">
                     <input id="choose-file" class="custom-file-input" name="file" type="file">
@@ -42,17 +41,18 @@
 
     <fieldset class="border p-2" id="step-2" style="display: none;">
         <legend class="w-auto">Step II</legend>
-            <p>Then you can train a model with your historical data. Fitting should take 1-5 seconds.</p>
-            <p>Predictions are then made for the requested number of days in the future (e.g. 365). By default the predictions will also include the dates from the history, so you will see the model fit as well.</p>
-        <button id="predict-btn" class="btn btn-primary" type="button">
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
-            Fit Model
-        </button>
+            <p>Enter the number of days in the future that you want to run the forecast for. Analysis takes 1-5 seconds.</p>
+            <div class="form-group">
+                <label for="formGroupDaysInput">Forecast days in future</label>
+                <input type="text" class="form-control" id="formGroupDaysInput" placeholder="30">
+            </div>   
+            <button id="predict-btn" class="btn btn-primary" type="button">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>Forecast
+            </button>
     </fieldset>
 
     <fieldset class="border p-2" id="step-3" style="display: none;">
         <legend class="w-auto">Step III</legend>
-        <p>The `predict` method will assign each row in `future` a predicted value which it names `yhat`.  If you pass in historical dates, it will provide an in-sample fit. The `forecast` object here is a new dataframe that includes a column `yhat` with the forecast, as well as columns for components and uncertainty intervals.</p>
         <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
         <button id="start-again" class="btn btn-primary" type="button">Start Again</button>
     </fieldset>
@@ -86,9 +86,6 @@ $(function() {
         $(this).siblings('.custom-file-label').addClass("selected").html(fileName);
     });
 
-    //$('#upload-file-btn').click(uploadFile);
-    //$('#choose-file').on('change', uploadFile);
-
     $('form#upload-file').submit(uploadFile);
     //$('#choose-file').on('change', function() { console.log('submitting'); $(this).parents('form:first').submit(); });
     $('#choose-file').on('change', function() { $(this).parents('form:first').find('input[type="submit"]').removeAttr('disabled'); });
@@ -101,17 +98,20 @@ $(function() {
 
     $('#predict-btn').click(function() {
         var self = this;
+        var days_no = $('#formGroupDaysInput').val();
         $(this).find('.spinner-border').show();
         var fn = $('input[type=file]').val().split('\\').pop();
         $.ajax({
             type: 'GET',
             url: 'http://127.0.0.1:5001/api/v1/predict',
             data: { 
-                filename: fn
+                filename: fn,
+                days: days_no
             },
             success: function(response) {
                 // play forecast image
                 $(self).find('.spinner-border').hide();
+                
                 $("#forecast-img").attr("src", response.url);
                 $('#step-2').hide();
                 $('#step-3').show();
