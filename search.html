@@ -7,7 +7,7 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Market</title>
+    <title>Search</title>
   </head>
 
 <body>
@@ -22,20 +22,16 @@
 
 <div class="container">
     <fieldset class="border p-2" id="step-1">
-        <form id="submit-symbol" method="post" enctype="multipart/form-data">
+        <form id="search" method="post" enctype="multipart/form-data">
             <legend class="w-auto">Step I</legend>
-            <p>Enter the market symbol and number of days that you want to run the forecast for.</p>
+            <p>Enter the number of days that you want to run the search for.</p>
             <div class="form-group">
-                <label for="formGroupSymbolInput">Stock market symbol</label>
-                <input type="text" class="form-control" id="formGroupSymbolInput" placeholder="CRM">
-            </div>
-            <div class="form-group">
-                <label for="formGroupDaysInput">Forecast days in future</label>
+                <label for="formGroupDaysInput">Search days in future</label>
                 <input type="text" class="form-control" id="formGroupDaysInput" placeholder="30">
             </div>            
             <button type="submit" class="btn btn-primary">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
-                Forecast
+                Search
             </button>
         </form>
     </fieldset>
@@ -66,62 +62,53 @@ function getAscendingRatio(trendArray) {
 }
 
 $(function() {
-    function submitSymbol(e) {
+    function startSearch(e) {
         e.preventDefault();
         var self = this;
         // Create a FormData object
         var formData = new FormData();
-        // Get symbol & days hyper-param
-        var symb = $('#formGroupSymbolInput').val();
+        // Create a FormData object
         var daysNo = $('#formGroupDaysInput').val();
         if (daysNo == '') {
-            daysNo = 30    // Default value
+            daysNo = 90    // Default value
         }
-        if(symb == ''){
-            alert('You should set the stock market symbol.');
-        } else {
-            $(this).find('.spinner-border').show();
-            formData.append('symbol', symb);
-            formData.append('days', daysNo);
+        $(this).find('.spinner-border').show();
+        formData.append('days', daysNo);
 
-            $.ajax({
-                type: 'POST',
-                url: 'http://127.0.0.1:5001/api/v1/forecast',
-                data: formData,
-                contentType: false,
-                cache: false,
-                processData: false,
-                success: function(response) {
-                    console.log('Success!');
-                    $('#step-1').hide();
-                    // stop spinner
-                    $(self).find('.spinner-border').hide();
+        $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:5001/api/v1/search',
+            data: formData,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function(response) {
+                console.log('Success!');
+                $('#step-1').hide();
+                // stop spinner
+                $(self).find('.spinner-border').hide();
+                if (response.symbol) {
                     // display forecast image
                     $("#forecast-img").attr("src", response.url);
                     trendArray = response.trend;
-                    // console.log(trendArray);
-                    var asc = getAscendingRatio(trendArray);
-                    var desc = 1.0 - asc;
                     //console.log(asc);
-                    if (asc > 0.9) {
-                        $("#forecast-img-nlg").text("The following graph shows the forecast for " + symb.toUpperCase() + " over the next " + daysNo + " days.  Our analysis suggests that you should buy this stock or hold if you have it.");
-                    } else if (desc > 0.9) {
-                        $("#forecast-img-nlg").text("The following graph shows the forecast for " + symb.toUpperCase() + " over the next " + daysNo + " days.  Our analysis suggests that you should sell this stock if you own it or short it.");
-                    } else {
-                        $("#forecast-img-nlg").text("The following graph shows the forecast for " + symb.toUpperCase() + " over the next " + daysNo + " days.  We don't recommend any actions at this time.");
-                    }
-                    $('#step-2').show();
-                },
-                error: function(xhr) {
-                    // handle error
-                    alert('Error occured while processing the request.  Try again later.');
-                    $(self).find('.spinner-border').hide();
-            }
-            });
+                    $("#forecast-img-nlg").text('The following graph shows the forecast for "' + response.symbol + '" over the next ' + daysNo + ' days.');                    
+                } else {
+                    // display 404 image
+                    $("#forecast-img").attr("src", 'figs/404.jpg');
+                    $("#forecast-img-nlg").text('No stock symbol were found!');
+                }
+                $('#step-2').show();
+            },
+            error: function(xhr) {
+                // handle error
+                alert('Error occured while processing the request.  Try again later.');
+                $(self).find('.spinner-border').hide();
         }
+        });
     }
 
-    $('form#submit-symbol').submit(submitSymbol);
+    $('form#search').submit(startSearch);
  
     $('#start-again').click(function() {
         $('#step-2').hide();
