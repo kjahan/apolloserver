@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- Your file css -->
+    <link rel="stylesheet" href="custom.css" />
+    <title>Search</title>
+  </head>
+
+<body>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+
+<div class="container">
+    <fieldset class="border p-2" id="step-1">
+        <form id="search" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="formGroupStocksInput">Number of stocks</label>
+                <input type="text" class="form-control" id="formGroupStocksInput" placeholder="10">
+            </div>  
+            <button type="submit" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
+                Search
+            </button>
+        </form>
+    </fieldset>
+
+    <fieldset class="border p-2" id="step-2" style="display: none;">
+        <p id="search-nlg"></p>
+        <div class="inner" id="ranking"></div>
+        <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
+        <button id="start-again" class="btn btn-primary" type="button">Search Again</button>
+    </fieldset>
+
+</div>
+
+<script>
+
+function getAscendingRatio(trendArray) {
+    // calculate the ascendingness of the array values
+    console.log(trendArray);
+    var asc = 0;
+    var arrayLength = trendArray.length;
+
+    for (var i = 0; i < arrayLength; i++) {
+        if (trendArray[i] <= trendArray[i+1]) {
+            asc += 1;
+        }
+    }
+  return asc/arrayLength;
+}
+
+$(function() {
+    function startSearch(e) {
+        $("#forecast-img").hide();
+        $('#ranking').show();
+        $("#ranking div").remove();
+        e.preventDefault();
+        var self = this;
+        // Create a FormData object
+        var formData = new FormData();
+        var stocksNo = $('#formGroupStocksInput').val();
+        if (stocksNo == '') {
+            stocksNo = 10    // Default value
+        }
+        $(this).find('.spinner-border').show();
+        formData.append('stocks', stocksNo);
+        $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:5001/api/v1/search',
+            data: formData,
+            contentType: false,
+            cache: false,
+            processData: false,
+            success: function(response) {
+                console.log('Success!');
+                $('#step-1').hide();
+                // stop spinner
+                $(self).find('.spinner-border').hide();
+                if (response.ranking) {
+                    //console.log(asc);
+                    $("#search-nlg").text('Top stocks among ' + response.index_size + ' indexed stocks:');
+                    // console.log(response.ranking);
+                    $("#ranking ul").empty();
+                    for(var i = 0, size = response.ranking.length; i < size ; i++){
+                       var stock = response.ranking[i];
+                       // console.log(stock["symbol"]);
+                       symbol = stock["symbol"];
+                       history_slope = stock["history_slope"];
+                       future_slope = stock["future_slope"];
+                       var forecastId = symbol;
+                       $("#ranking").append('<div id="symbol"><p><a href="#" id="' + forecastId + '"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>Forecast ' + symbol + 
+                        '</a>: history growth of ' + Number((history_slope).toFixed(2)) + ' & future growth of ' + Number((future_slope).toFixed(2)) + '</p><hr></div>');
+                        $('#' + forecastId).click(function(){
+                            e.preventDefault();
+                            var self = this;
+                            // Create a FormData object
+                            var formData = new FormData();
+                            daysNo = 90;
+                            $(this).find('.spinner-border').show();
+                            formData.append('symbol', this.id);
+                            formData.append('days', daysNo);
+                            $.ajax({
+                                type: 'POST',
+                                url: 'http://127.0.0.1:5001/api/v1/forecast',
+                                data: formData,
+                                contentType: false,
+                                cache: false,
+                                processData: false,
+                                success: function(response) {
+                                    console.log('Success!');
+                                    $("#search-nlg").empty();
+                                    $('#ranking').hide();
+                                    // stop spinner
+                                    $(self).find('.spinner-border').hide();
+                                    // display forecast image
+                                    $("#forecast-img").show();
+                                    $("#forecast-img").attr("src", response.url);
+                                    trendArray = response.trend;
+                                    // console.log(trendArray);
+                                    var asc = getAscendingRatio(trendArray);
+                                    var desc = 1.0 - asc;
+                                    
+                                    //console.log(asc);
+                                    if (asc > 0.9) {
+                                        $("#search-nlg").text("The following graph shows the forecast for " + response.symbol.toUpperCase() + " over the next " + daysNo + " days.  Our analysis suggests that you should buy this stock or hold if you have it.");
+                                    } else if (desc > 0.9) {
+                                        $("#search-nlg").text("The following graph shows the forecast for " + response.symbol.toUpperCase() + " over the next " + daysNo + " days.  Our analysis suggests that you should sell this stock if you own it or short it.");
+                                    } else {
+                                        $("#search-nlg").text("The following graph shows the forecast for " + response.symbol.toUpperCase() + " over the next " + daysNo + " days.  We don't recommend any actions at this time.");
+                                    }
+                                    $('#step-2').show();
+                                },
+                                error: function(xhr) {
+                                    // handle error
+                                    alert('Error occured while processing the request.  Try again later.');
+                                    $(self).find('.spinner-border').hide();
+                            }
+                            });
+                            
+                        });
+                    }
+                    
+            
+                } else {
+                    // display 404 image
+                    $("#search-nlg").text('No search results!');
+                }
+                $('#step-2').show();
+            },
+            error: function(xhr) {
+                // handle error
+                alert('Error occured while processing the request.  Try again later.');
+                $(self).find('.spinner-border').hide();
+        }
+        });
+    }
+
+    $('form#search').submit(startSearch);
+ 
+    $('#start-again').click(function() {
+        $('#step-2').hide();
+        $('#step-1').show();
+    });
+});
+</script>
+
+</body>
+</html> 
