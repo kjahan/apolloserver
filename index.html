@@ -7,7 +7,7 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>Search</title>
+    <title>Index</title>
   </head>
 
 <body>
@@ -24,14 +24,18 @@
     <fieldset class="border p-2" id="step-1">
         <form id="search" method="post" enctype="multipart/form-data">
             <legend class="w-auto">Step I</legend>
-            <p>Enter the number of days that you want to run the search for.</p>
+            <p>Enter the number of days and the batch size for indexing public companies stocks.</p>
             <div class="form-group">
-                <label for="formGroupDaysInput">Search days in future</label>
+                <label for="formGroupDaysInput">Number of days for analysis</label>
                 <input type="text" class="form-control" id="formGroupDaysInput" placeholder="30">
+            </div>
+            <div class="form-group">
+                <label for="formGroupBatchInput">Stock batch size</label>
+                <input type="text" class="form-control" id="formGroupBatchInput" placeholder="10">
             </div>            
             <button type="submit" class="btn btn-primary">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
-                Search
+                Start Indexing
             </button>
         </form>
     </fieldset>
@@ -40,7 +44,7 @@
         <legend class="w-auto">Step II</legend>
         <div class="inner"><p id="forecast-img-nlg"></p></div>
         <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
-        <button id="start-again" class="btn btn-primary" type="button">Start Again</button>
+        <button id="start-again" class="btn btn-primary" type="button">Index Another Batch</button>
     </fieldset>
 
 </div>
@@ -62,7 +66,7 @@ function getAscendingRatio(trendArray) {
 }
 
 $(function() {
-    function startSearch(e) {
+    function startIndexing(e) {
         e.preventDefault();
         var self = this;
         // Create a FormData object
@@ -72,12 +76,13 @@ $(function() {
         if (daysNo == '') {
             daysNo = 90    // Default value
         }
+        var batchSize = $('#formGroupBatchInput').val();
         $(this).find('.spinner-border').show();
         formData.append('days', daysNo);
-
+        formData.append('batch', batchSize);
         $.ajax({
             type: 'POST',
-            url: 'http://127.0.0.1:5001/api/v1/search',
+            url: 'http://127.0.0.1:5001/api/v1/index',
             data: formData,
             contentType: false,
             cache: false,
@@ -92,7 +97,7 @@ $(function() {
                     $("#forecast-img").attr("src", response.url);
                     trendArray = response.trend;
                     //console.log(asc);
-                    $("#forecast-img-nlg").text('The following graph shows the forecast for "' + response.symbol + '" over the next ' + daysNo + ' days.');                    
+                    $("#forecast-img-nlg").text('Among ' + response.index_size + ' indexed stocks, "' + response.symbol + '" had the maximum growth over ' + daysNo + ' days. See below for the forecast:');                    
                 } else {
                     // display 404 image
                     $("#forecast-img").attr("src", 'figs/404.jpg');
@@ -108,7 +113,7 @@ $(function() {
         });
     }
 
-    $('form#search').submit(startSearch);
+    $('form#search').submit(startIndexing);
  
     $('#start-again').click(function() {
         $('#step-2').hide();
