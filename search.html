@@ -100,7 +100,7 @@ $(function() {
                        history_slope = stock["history_slope"];
                        future_slope = stock["future_slope"];
                        var forecastId = symbol;
-                       $("#ranking").append('<div id="symbol"><p><a href="#" id="' + forecastId + '"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>Forecast ' + symbol + 
+                       $("#ranking").append('<div id="symbol"><p><a href="#" id="' + forecastId + '"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>' + symbol + 
                         '</a>: history growth of ' + Number((history_slope).toFixed(2)) + ' & future growth of ' + Number((future_slope).toFixed(2)) + '</p><hr></div>');
                         $('#' + forecastId).click(function(){
                             e.preventDefault();
