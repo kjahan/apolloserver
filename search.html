@@ -62,6 +62,24 @@ function getAscendingRatio(trendArray) {
 }
 
 $(function() {
+    function createBar(growth, title) {
+        max_growth = 2.5;
+        console.log(growth);
+        width = Math.min(Math.floor(growth/max_growth * 50), 50);
+        console.log(width);
+        // width = Math.floor(Math.random() * 50);
+        return '<div class="bar-container" style="width: ' + width + '%;"><div class="bar"></div>' + title + ':&nbsp;' + Number((growth).toFixed(2)) + '</div>';
+    }
+
+    function createBars(historic, future) {
+        var cmp = '<div class="bar-wrapper">';
+        cmp += createBar(historic, 'Historic');
+        cmp += createBar(future, 'Future');
+        cmp += '</div><br class="clear"';
+
+        return cmp;
+    }
+
     function startSearch(e) {
         $("#forecast-img").hide();
         $('#ranking').show();
@@ -100,8 +118,9 @@ $(function() {
                        history_slope = stock["history_slope"];
                        future_slope = stock["future_slope"];
                        var forecastId = symbol;
-                       $("#ranking").append('<div id="symbol"><h4><a href="#" id="' + forecastId + '"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>' + symbol + 
-                        '</a></h4><h5>Historical growth: ' + Number((history_slope).toFixed(2)) + ' & future growth: ' + Number((future_slope).toFixed(2)) + '</h5><hr></div>');
+                       $("#ranking").append('<div class="symbol"><h4><a href="#" id="' + forecastId + '"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>' + symbol + 
+                        '</a></h4>' + createBars(history_slope, future_slope) + '</div>');
+                       // createBars('50', '50')
                         $('#' + forecastId).click(function(){
                             e.preventDefault();
                             var self = this;
