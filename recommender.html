@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <!-- Your file css -->
     <link rel="stylesheet" href="custom.css" />
-    <title>Search</title>
+    <title>Recommender</title>
   </head>
 
 <body>
@@ -26,12 +26,14 @@
     <fieldset class="border p-2" id="step-1">
         <form id="search" method="post" enctype="multipart/form-data">
             <div class="form-group">
+                <label for="formGroupExInput">Exchange</label>
+                <input type="text" class="form-control" id="formGroupExInput" placeholder="nyse">                
                 <label for="formGroupStocksInput">Number of stocks</label>
                 <input type="text" class="form-control" id="formGroupStocksInput" placeholder="10">
             </div>  
             <button type="submit" class="btn btn-primary">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none"></span>
-                Search
+                Recommend
             </button>
         </form>
     </fieldset>
@@ -40,7 +42,7 @@
         <p id="search-nlg"></p>
         <div class="inner" id="ranking"></div>
         <img id="forecast-img" src="" alt="forecast graph" style="max-width: 100%"><br />
-        <button id="start-again" class="btn btn-primary" type="button">Search Again</button>
+        <button id="start-again" class="btn btn-primary" type="button">Try Again</button>
     </fieldset>
 
 </div>
@@ -63,18 +65,22 @@ function getAscendingRatio(trendArray) {
 
 $(function() {
     function createBar(growth, title) {
-        max_growth = 2.5;
+        if (title == "H") {
+            max_growth = 2.38;
+        } else {
+            max_growth = 0.67;
+        }
         console.log(growth);
         width = Math.min(Math.floor(growth/max_growth * 50), 50);
         console.log(width);
         // width = Math.floor(Math.random() * 50);
-        return '<div class="bar-container" style="width: ' + width + '%;"><div class="bar"></div>' + title + ':&nbsp;' + Number((growth).toFixed(2)) + '</div>';
+        return '<div class="bar-container" style="width: ' + width + '%;"><div class="bar"></div>' + title + ':' + Number((growth).toFixed(2)) + '</div>';
     }
 
     function createBars(historic, future) {
         var cmp = '<div class="bar-wrapper">';
-        cmp += createBar(historic, 'Historic');
-        cmp += createBar(future, 'Future');
+        cmp += createBar(historic, 'H');
+        cmp += createBar(future, 'F');
         cmp += '</div><br class="clear"';
 
         return cmp;
@@ -92,8 +98,13 @@ $(function() {
         if (stocksNo == '') {
             stocksNo = 10    // Default value
         }
+        var exchangeName = $('#formGroupExInput').val();
+        if (exchangeName == '') {
+            exchangeName = 'nyse'    // Default value
+        }        
         $(this).find('.spinner-border').show();
         formData.append('stocks', stocksNo);
+        formData.append('exchange', exchangeName);
         $.ajax({
             type: 'POST',
             url: 'http://127.0.0.1:5001/api/v1/search',
